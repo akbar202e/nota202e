@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Form Nota Pembayaran — UPT Lab</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2pdf -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    /* PRINT untuk thermal 48mm */
+    @media print {
+      body * { visibility: hidden; }
+      #nota-print-area, #nota-print-area * { visibility: visible; }
+      #nota-print-area { position: absolute; left:0; top:0; }
+      @page { size: 48mm auto; margin: 0; }
+    }
+
+    /* Preview nota di layar (diperbesar agar mudah dibaca) */
+    #nota-preview {
+      width: 48mm;
+      background: #fff;
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 7pt;
+      line-height: 1.35;
+      color: #000;
+      transform: scale(1.5);
+      transform-origin: top left;
+    }
+    #nota-preview h1 { font-size: 8pt; margin:0; text-align:center; font-weight:700; }
+    #nota-preview p { margin:0; text-align:center; font-size:7pt; }
+    #nota-preview .divider { border-top: 1px dashed #000; margin:6px 0; }
+    #nota-preview table { width:100%; font-size:7pt; border-collapse: collapse; }
+    #nota-preview td, #nota-preview th { padding: 1px 0; vertical-align: top; }
+    #nota-preview .total-row th, #nota-preview .total-row td { font-weight:700; border-top:1px solid #000; }
+
+    /* Hidden print area wrapper (used for measuring & printing) */
+    #nota-print-area { display: none; }
+
+    /* Small spinner */
+    .spinner { border-top-color: #2563eb; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6 font-sans">
+
+  <div class="max-w-7xl mx-auto">
+
+    <!-- PENCARIAN NOTA -->
+    <div class="bg-white p-4 rounded shadow mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:space-x-4">
+        <div class="flex-grow">
+          <h2 class="text-lg font-semibold">Cari Nota Lama</h2>
+          <div class="mt-2 flex gap-2">
+            <input id="cari-nota-input" type="text" placeholder="Masukkan No. Nota (contoh: 281025-01)" class="flex-grow border rounded p-2" />
+            <button id="cari-nota-btn" class="bg-indigo-600 text-white px-4 py-2 rounded flex items-center">
+              <span id="cari-nota-text">Cari</span>
+              <div id="cari-nota-loader" class="spinner w-4 h-4 border-2 border-t-white rounded-full ml-2 hidden"></div>
+            </button>
+            <button id="reset-cari-btn" class="bg-gray-300 text-gray-800 px-3 py-2 rounded hidden">Buat Nota Baru</button>
+          </div>
+          <div id="cari-nota-message" class="mt-2 text-sm"></div>
+        </div>
+
+        <div class="mt-3 md:mt-0">
+          <!-- Kontrol reprint telah dihapus sesuai permintaan -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID: Form kiri | Preview kanan -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- FORM (KIRI) -->
+      <div class="bg-white p-6 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4">Formulir Nota Pembayaran Baru</h1>
+
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded mb-4 text-sm text-blue-700">
+          <strong>PENTING:</strong> Masukkan URL Web App Google Apps Script Anda pada variabel <code>webAppUrl</code> di bawah script.
+        </div>
+
+        <form id="nota-form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium">Nama Kasir</label>
+              <input id="kasir" value="Tinawati" class="w-full border rounded p-2" required />
+            </div>
+            <div>
+              <label class="text-sm font-medium">Pemohon (PT/CV)</label>
+              <input id="pemohon" class="w-full border rounded p-2" required />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">Pekerjaan (Nama Paket)</label>
+            <input id="pekerjaan" class="w-full border rounded p-2" required />
+          </div>
+
+          <hr />
+
+          <!-- Cari Item via Sheet -->
+          <div>
+            <label class="text-sm font-medium">Cari Item</label>
+            <input id="item-search" placeholder="Ketik nama barang..." class="w-full border rounded p-2" autocomplete="off" />
+            <div id="search-results" class="z-50 bg-white border rounded mt-1 w-[100%] max-h-52 overflow-auto hidden"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+            <input type="hidden" id="item-price" />
+            <input type="hidden" id="item-name" />
+            <div class="md:col-span-2">
+              <label class="text-sm font-medium">Item Terpilih</label>
+              <input id="item-selected-display" disabled class="w-full bg-gray-100 border rounded p-2" />
+            </div>
+            <div>
+              <label class="text-sm font-medium">Jumlah</label>
+              <input id="item-qty" type="number" min="1" value="1" class="w-full border rounded p-2" />
+            </div>
+          </div>
+
+          <div>
+            <button type="button" id="tambah-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Tambah Item</button>
+          </div>
+
+          <div>
+            <h3 class="font-semibold">Daftar Item Dibeli</h3>
+            <div id="cart-items" class="mt-2 border rounded p-3 min-h-[60px] text-sm text-gray-700">
+              <p id="cart-empty" class="text-gray-500">Belum ada item.</p>
+            </div>
+          </div>
+
+          <div class="text-right text-xl font-bold">
+            Total: <span id="total-harga">Rp 0</span>
+          </div>
+
+          <hr />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-sm font-medium">Metode Pembayaran</label>
+              <div class="mt-2 space-x-3">
+                <label><input type="radio" name="metode" value="Cash" checked class="mr-1"> Cash</label>
+                <label><input type="radio" name="metode" value="Transfer" class="mr-1"> Transfer</label>
+              </div>
+              <div id="bank-input" class="mt-2 hidden">
+                <label class="text-sm font-medium">Nama Bank</label>
+                <input id="nama-bank" class="w-full border rounded p-2" />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium">Jumlah Bayar (Rp)</label>
+              <input id="jumlah-bayar" type="number" placeholder="0" class="w-full border rounded p-2" />
+            </div>
+          </div>
+
+          <div id="form-message" class="text-sm mt-2"></div>
+
+          <!-- Tombol terpisah -->
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button type="button" id="save-btn" class="bg-green-600 text-white px-4 py-2 rounded flex items-center">
+              <span id="save-text">Simpan</span>
+              <div id="save-loader" class="spinner w-4 h-4 border-2 border-t-white rounded-full ml-2 hidden"></div>
+            </button>
+
+            <button type="button" id="print-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Cetak</button>
+
+            <button type="button" id="reset-btn" class="bg-gray-500 text-white px-4 py-2 rounded">Reset</button>
+
+          </div>
+
+        </form>
+      </div>
+
+      <!-- PREVIEW (KANAN) -->
+      <div>
+        <h2 class="text-lg font-bold mb-2">Preview Nota (live)</h2>
+
+        <div id="nota-preview" aria-hidden="false">
+          <h1>UPT LAB. BAHAN KONSTRUKSI</h1>
+          <p>Jalan Tjilik Riwut km. 3 Palangka Raya</p>
+          <p>(0536) 3222607</p>
+
+          <div class="divider"></div>
+
+          <table>
+            <tr><td>No. Nota</td><td>: <span id="nota-no-preview">AUTO</span></td></tr>
+            <tr><td>Tanggal</td><td>: <span id="nota-tanggal-preview"></span></td></tr>
+            <tr><td>Kasir</td><td>: <span id="nota-kasir-preview"></span></td></tr>
+          </table>
+
+          <div class="divider"></div>
+
+          <table>
+            <tr><td>Pemohon</td><td>: <span id="nota-pemohon-preview"></span></td></tr>
+            <tr><td>Pekerjaan</td><td>: <span id="nota-pekerjaan-preview"></span></td></tr>
+          </table>
+
+          <div class="divider"></div>
+
+          <table id="nota-items-preview">
+            <tbody></tbody>
+          </table>
+
+          <div class="divider"></div>
+
+          <table>
+            <tr class="total-row"><th align="left">TOTAL</th><td align="right"><span id="nota-total-preview">Rp 0</span></td></tr>
+            <tr><th align="left">Bayar (<span id="nota-metode-preview"></span>)</th><td align="right"><span id="nota-bayar-preview">Rp 0</span></td></tr>
+          </table>
+
+          <div class="divider"></div>
+          <p style="margin-top:6px;text-align:center;">-- Terima Kasih --</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Area tersembunyi untuk print (menggunakan isi dari preview) -->
+    <div id="nota-print-area" aria-hidden="true">
+      <div id="nota-wrapper"></div>
+    </div>
+
+  </div>
+
+  <script>
+    /*************************************************************************
+     * PENTING: GANTI nilai webAppUrl di bawah ini dengan URL Web App GAS kamu
+     * (hasil deploy "Execute as: me" & "Who has access: Anyone").
+     *************************************************************************/
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbx2iC-Vv-T-dDtUMxMWugqEZM5bpGtCNLV2I8xYINiJTs0zqZj3BX4m1sruvhAB1_l7Fg/exec';
+
+    // Utility
+    const $ = id => document.getElementById(id);
+    const q = s => document.querySelector(s);
+    const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+
+    // State
+    let itemMasterList = []; // dari sheet DaftarBarang -> format: [[name, price], ...]
+    let cart = [];
+    let totalKeseluruhan = 0;
+    let formLockedForNota = false; // flag ketika nota lama dimuat
+
+    // Elemen
+    const itemSearchEl = $('item-search');
+    const searchResultsEl = $('search-results');
+    const itemSelectedDisplayEl = $('item-selected-display');
+    const itemPriceEl = $('item-price');
+    const itemNameHiddenEl = $('item-name');
+    const itemQtyEl = $('item-qty');
+    const tambahItemBtn = $('tambah-item-btn');
+    const cartItemsEl = $('cart-items');
+    const cartEmptyEl = $('cart-empty');
+    const totalHargaEl = $('total-harga');
+    const metodeEls = document.getElementsByName('metode');
+    const bankInputEl = $('bank-input');
+    const namaBankEl = $('nama-bank');
+    const jumlahBayarEl = $('jumlah-bayar');
+
+    // Buttons / controls
+    const saveBtn = $('save-btn');
+    const saveLoader = $('save-loader');
+    const saveText = $('save-text');
+    const printBtn = $('print-btn');
+    const resetBtn = $('reset-btn');
+
+    // Cari Nota
+    const cariNotaInput = $('cari-nota-input');
+    const cariNotaBtn = $('cari-nota-btn');
+    const cariNotaText = $('cari-nota-text');
+    const cariNotaLoader = $('cari-nota-loader');
+    const cariNotaMessage = $('cari-nota-message');
+    const resetCariBtn = $('reset-cari-btn');
+
+    // Preview elements
+    const notaNoPreview = $('nota-no-preview');
+    const notaTanggalPreview = $('nota-tanggal-preview');
+    const notaKasirPreview = $('nota-kasir-preview');
+    const notaPemohonPreview = $('nota-pemohon-preview');
+    const notaPekerjaanPreview = $('nota-pekerjaan-preview');
+    const notaItemsPreview = $('nota-items-preview').getElementsByTagName('tbody')[0];
+    const notaTotalPreview = $('nota-total-preview');
+    const notaMetodePreview = $('nota-metode-preview');
+    const notaBayarPreview = $('nota-bayar-preview');
+
+    // Print wrapper
+    const notaPrintArea = $('nota-print-area');
+    const notaWrapper = $('nota-wrapper');
+
+    // Form message
+    const formMessage = $('form-message');
+
+    // Inisialisasi: ambil daftar barang
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!webAppUrl || webAppUrl.startsWith('MASUKKAN_URL')) {
+        // Jangan alert otomatis, tunggu user
+        console.warn('webAppUrl belum diisi. Silakan isi variabel webAppUrl di script HTML.' );
+      } else {
+        fetchItemsFromSheet();
+      }
+      addEventListeners();
+      renderCart(); // inisialisasi
+      updatePreview();
+    });
+
+    /* ------------------ FETCH ITEMS ------------------ */
+    function fetchItemsFromSheet() {
+      fetch(`${webAppUrl}?action=getItems`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            itemMasterList = data; // ex: [["Semen", 50000], ["Pasir", 75000]]
+            console.log('Daftar barang dimuat:', itemMasterList);
+          } else {
+            if (data && data.status && data.status === 'error') {
+              console.error('Error saat fetch items:', data.message);
+            } else {
+              console.warn('Format data items tidak dikenal:', data);
+            }
+          }
+        }).catch(err => {
+          console.error('Gagal ambil daftar barang:', err);
+        });
+    }
+
+    /* ------------------ EVENT LISTENERS ------------------ */
+    function addEventListeners() {
+      // Item search
+      itemSearchEl.addEventListener('keyup', handleItemSearch);
+      searchResultsEl.addEventListener('click', handleItemSelect);
+      document.addEventListener('click', handleClickOutside);
+
+      // Add item
+      tambahItemBtn.addEventListener('click', handleAddItem);
+
+      // Payment method change
+      metodeEls.forEach(radio => radio.addEventListener('change', handlePaymentMethodChange));
+
+      // Form buttons
+      saveBtn.addEventListener('click', handleSave);
+      printBtn.addEventListener('click', handlePrint);
+      resetBtn.addEventListener('click', handleReset);
+
+      // Cari Nota
+      cariNotaBtn.addEventListener('click', handleCariNota);
+      resetCariBtn.addEventListener('click', resetCariForm);
+
+      // Update preview when typing in key fields
+      ['kasir','pemohon','pekerjaan','jumlah-bayar','nama-bank'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updatePreview);
+      });
+    }
+
+    /* ------------------ ITEM SEARCH & SELECT ------------------ */
+    function handleItemSearch(e) {
+      if (formLockedForNota) return; // blokir search jika form dikunci
+      const qtext = e.target.value.trim().toLowerCase();
+      if (qtext.length < 1) { searchResultsEl.innerHTML = ''; searchResultsEl.classList.add('hidden'); return; }
+      const filtered = itemMasterList.filter(it => it[0].toString().toLowerCase().includes(qtext));
+      if (filtered.length === 0) {
+        searchResultsEl.innerHTML = `<div class="p-2 text-gray-500">Item tidak ditemukan</div>`;
+        searchResultsEl.classList.remove('hidden');
+        return;
+      }
+      searchResultsEl.innerHTML = filtered.map(it => {
+        return `<div class="p-2 hover:bg-gray-100 cursor-pointer" data-name="${escapeHtml(it[0])}" data-price="${it[1]}">
+          <strong>${escapeHtml(it[0])}</strong> — ${rupiah(it[1])}
+        </div>`;
+      }).join('');
+      searchResultsEl.classList.remove('hidden');
+    }
+
+    function handleItemSelect(e) {
+      if (formLockedForNota) return;
+      const node = e.target.closest('div[data-name]');
+      if (!node) return;
+      const name = node.dataset.name;
+      const price = node.dataset.price;
+      itemSelectedDisplayEl.value = `${name} (${rupiah(price)})`;
+      itemNameHiddenEl.value = name;
+      itemPriceEl.value = price;
+      itemSearchEl.value = '';
+      searchResultsEl.classList.add('hidden');
+      itemQtyEl.focus();
+    }
+
+    function handleClickOutside(e) {
+      if (!itemSearchEl.contains(e.target) && !searchResultsEl.contains(e.target)) {
+        searchResultsEl.classList.add('hidden');
+      }
+    }
+
+    /* ------------------ CART HANDLING ------------------ */
+    function handleAddItem() {
+      if (formLockedForNota) return;
+      const name = itemNameHiddenEl.value || itemSelectedDisplayEl.value.split(' (')[0];
+      const price = parseFloat(itemPriceEl.value || 0);
+      const qty = parseInt(itemQtyEl.value || 1, 10);
+      if (!name || isNaN(price) || isNaN(qty) || qty < 1) {
+        alert('Silakan pilih item dan masukkan jumlah yang valid.');
+        return;
+      }
+      cart.push({ name, price, qty, total: price * qty });
+      // reset item-select fields
+      itemSelectedDisplayEl.value = '';
+      itemNameHiddenEl.value = '';
+      itemPriceEl.value = '';
+      itemQtyEl.value = 1;
+      renderCart();
+      updatePreview();
+    }
+
+    function renderCart() {
+      cartItemsEl.innerHTML = '';
+      if (cart.length === 0) {
+        cartItemsEl.appendChild(cartEmptyEl);
+        totalKeseluruhan = 0;
+      } else {
+        if (cartEmptyEl.parentNode) cartEmptyEl.remove();
+        totalKeseluruhan = 0;
+        cart.forEach((it, idx) => {
+          totalKeseluruhan += it.total;
+          const row = document.createElement('div');
+          row.className = 'flex justify-between items-center p-2 bg-white border-b';
+          row.innerHTML = `<div>
+              <span class="font-medium">${escapeHtml(it.name)}</span>
+              <div class="text-xs text-gray-500">${it.qty} x ${rupiah(it.price)}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-medium">${rupiah(it.total)}</span>
+              <button class="text-red-500 hover:text-red-700" data-idx="${idx}" title="Hapus">&times;</button>
+            </div>`;
+          cartItemsEl.appendChild(row);
+        });
+        // add delete listeners
+        cartItemsEl.querySelectorAll('button[data-idx]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            if (formLockedForNota) return;
+            const idx = parseInt(e.currentTarget.dataset.idx, 10);
+            cart.splice(idx, 1);
+            renderCart();
+            updatePreview();
+          });
+        });
+      }
+      totalHargaEl.textContent = rupiah(totalKeseluruhan);
+      jumlahBayarEl.value = totalKeseluruhan || '';
+    }
+
+    /* ------------------ PAYMENT METHOD ------------------ */
+    function handlePaymentMethodChange(e) {
+      if (formLockedForNota) return;
+      if (e.target.value === 'Transfer') {
+        bankInputEl.classList.remove('hidden');
+        namaBankEl.required = true;
+      } else {
+        bankInputEl.classList.add('hidden');
+        namaBankEl.required = false;
+        namaBankEl.value = '';
+      }
+      updatePreview();
+    }
+
+    /* ------------------ POPULATE PREVIEW ------------------ */
+    function updatePreview(nomorNota = null, tanggalNota = null, dataFromSheet = null) {
+      const now = tanggalNota ? new Date(tanggalNota).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+      notaTanggalPreview.textContent = now;
+
+      if (dataFromSheet) {
+        notaNoPreview.textContent = dataFromSheet.nomorNota || (nomorNota || 'AUTO');
+        notaKasirPreview.textContent = dataFromSheet.kasir || '';
+        notaPemohonPreview.textContent = dataFromSheet.pemohon || '';
+        notaPekerjaanPreview.textContent = dataFromSheet.pekerjaan || '';
+        notaItemsPreview.innerHTML = '';
+        (dataFromSheet.cart || []).forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escapeHtml(item.name)} (${item.qty} x ${rupiah(item.price)})</td><td align="right">${rupiah(item.total)}</td>`;
+          notaItemsPreview.appendChild(tr);
+        });
+        notaTotalPreview.textContent = rupiah(dataFromSheet.totalKeseluruhan || 0);
+        notaMetodePreview.textContent = (dataFromSheet.metodePembayaran || '') + (dataFromSheet.bank ? ` (${dataFromSheet.bank})` : '');
+        notaBayarPreview.textContent = rupiah(dataFromSheet.jumlahBayar || 0);
+
+        // isi local cart & form fields agar pengguna bisa melihat data di form
+        cart = (dataFromSheet.cart || []).map(i => ({...i}));
+        totalKeseluruhan = dataFromSheet.totalKeseluruhan || 0;
+        totalHargaEl.textContent = rupiah(totalKeseluruhan);
+        jumlahBayarEl.value = dataFromSheet.jumlahBayar || '';
+
+        // isi form fields (dan lock)
+        $('kasir').value = dataFromSheet.kasir || '';
+        $('pemohon').value = dataFromSheet.pemohon || '';
+        $('pekerjaan').value = dataFromSheet.pekerjaan || '';
+        // metode radio
+        const metodeVal = (dataFromSheet.metodePembayaran || 'Cash');
+        document.querySelectorAll('input[name="metode"]').forEach(r => {
+          r.checked = (r.value === metodeVal);
+        });
+        if (metodeVal === 'Transfer') {
+          bankInputEl.classList.remove('hidden');
+          namaBankEl.value = dataFromSheet.bank || '';
+        } else {
+          bankInputEl.classList.add('hidden');
+          namaBankEl.value = '';
+        }
+
+        renderCart();
+        // lock form so fields cannot diubah
+        setFormReadOnly(true);
+      } else {
+        // Use current form state
+        notaNoPreview.textContent = nomorNota || 'AUTO';
+        notaKasirPreview.textContent = $('kasir').value || '';
+        notaPemohonPreview.textContent = $('pemohon').value || '';
+        notaPekerjaanPreview.textContent = $('pekerjaan').value || '';
+        notaItemsPreview.innerHTML = '';
+        cart.forEach(it => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escapeHtml(it.name)} (${it.qty} x ${rupiah(it.price)})</td><td align="right">${rupiah(it.total)}</td>`;
+          notaItemsPreview.appendChild(tr);
+        });
+        notaTotalPreview.textContent = rupiah(totalKeseluruhan || 0);
+        const metode = document.querySelector('input[name="metode"]:checked')?.value || '';
+        notaMetodePreview.textContent = metode + (metode === 'Transfer' && namaBankEl.value ? ` (${namaBankEl.value})` : '');
+        notaBayarPreview.textContent = rupiah(parseFloat(jumlahBayarEl.value || 0));
+      }
+    }
+
+    /* ------------------ SAVE TO SHEET (POST) ------------------ */
+    async function handleSave() {
+      if (!webAppUrl || webAppUrl.startsWith('MASUKKAN_URL')) {
+        alert('Harap masukkan URL Web App Google Apps Script Anda pada variabel webAppUrl.');
+        return;
+      }
+      if (cart.length === 0) { 
+        alert('Keranjang masih kosong.'); 
+        return; 
+      }
+
+      setLoading(true, 'save');
+      formMessage.textContent = 'Menyimpan data ke Google Sheet...';
+
+      // 🔹 Buat string gabungan item seperti "uji dmf (2), uji aspal (1)"
+      const itemSummary = cart.map(it => `${it.name} (${it.qty})`).join(', ');
+
+      const formData = {
+        kasir: $('kasir').value,
+        pemohon: $('pemohon').value,
+        pekerjaan: $('pekerjaan').value,
+        cart: cart,
+        totalKeseluruhan: totalKeseluruhan,
+        metodePembayaran: document.querySelector('input[name="metode"]:checked').value,
+        bank: $('nama-bank').value || null,
+        jumlahBayar: parseFloat($('jumlah-bayar').value) || 0,
+        itemSummary: itemSummary
+      };
+
+      try {
+        const res = await fetch(webAppUrl, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          formMessage.textContent = `Sukses! Nota ${data.nomorNota} berhasil disimpan.`;
+          formMessage.className = 'text-sm text-green-600';
+          updatePreview(data.nomorNota);
+          notaNoPreview.textContent = data.nomorNota;
+        } else {
+          throw new Error(data.message || 'Gagal menyimpan nota');
+        }
+      } catch (err) {
+        formMessage.textContent = `Error: ${err.message}`;
+        formMessage.className = 'text-sm text-red-600';
+      } finally {
+        setLoading(false, 'save');
+      }
+    }
+
+
+    /* ------------------ PRINT & PDF ------------------ */
+    function handlePrint() {
+      // Prepare nota-wrapper with contents of preview (clean scale)
+      notaWrapper.innerHTML = populateNotaWrapperHtml();
+      notaPrintArea.style.display = 'block';
+      // Use small timeout to allow DOM update
+      setTimeout(() => {
+        window.print();
+        notaPrintArea.style.display = 'none';
+      }, 200);
+    }
+
+    function populateNotaWrapperHtml() {
+      const header = `
+        <div style="width:100%;font-family: Arial, Helvetica, sans-serif;font-size:7pt;line-height:1.35;color:#000">
+          <h1 style="font-weight: bold;font-size:16pt;text-align:center;margin:0">UPT LAB. BAHAN KONSTRUKSI</h1>
+          <p style="font-size:11pt;text-align:center;margin:0">Jalan Tjilik Riwut km. 3 Palangka Raya</p>
+          <p style="font-size:11pt;text-align:center;margin:0">(0536) 3222607</p>
+          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+          <table style="width:100%;font-size:12pt;">
+            <tr><td>No. Nota</td><td>: ${escapeHtml(notaNoPreview.textContent)}</td></tr>
+            <tr><td>Tanggal</td><td>: ${escapeHtml(notaTanggalPreview.textContent)}</td></tr>
+            <tr><td>Kasir</td><td>: ${escapeHtml(notaKasirPreview.textContent)}</td></tr>
+          </table>
+          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+          <table style="width:100%;font-size:11pt;">
+            <tr><td style="vertical-align: top; text-align: left;">Pemohon</td><td>: ${escapeHtml(notaPemohonPreview.textContent)}</td></tr>
+            <tr><td style="vertical-align: top; text-align: left;">Pekerjaan</td><td>: ${escapeHtml(notaPekerjaanPreview.textContent)}</td></tr>
+          </table>
+          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+          <table style="width:100%;font-size:11pt;">`;
+      let itemsHtml = '';
+      cart.forEach(it => {
+        itemsHtml += `<tr><td>${escapeHtml(it.name)} (${it.qty} x ${rupiah(it.price)})</td><td align="right">${rupiah(it.total)}</td></tr>`;
+      });
+      const footer = `
+          </table>
+          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+          <table style="width:100%;font-size:10pt;">
+            <tr style="font-weight:700;border-top:1px solid #000"><th align="left">TOTAL</th><td align="right">${rupiah(totalKeseluruhan)}</td></tr>
+            <tr><th align="left">Bayar (${escapeHtml(notaMetodePreview.textContent)})</th><td align="right">${escapeHtml(notaBayarPreview.textContent)}</td></tr>
+          </table>
+          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+          <p style="font-size:11pt;text-align:center;margin-top:6px">-- Terima Kasih --</p>
+        </div>`;
+      return header + itemsHtml + footer;
+    }
+
+    /* ------------------ SEARCH NOTA LAMA ------------------ */
+    function setLoading(isLoading, type='cari') {
+      if (type === 'cari') {
+        $('cari-nota-btn').disabled = isLoading;
+        if (isLoading) { cariNotaText.classList.add('hidden'); cariNotaLoader.classList.remove('hidden'); }
+        else { cariNotaText.classList.remove('hidden'); cariNotaLoader.classList.add('hidden'); }
+      } else if (type === 'save') {
+        saveBtn.disabled = isLoading;
+        if (isLoading) { saveText.classList.add('hidden'); saveLoader.classList.remove('hidden'); }
+        else { saveText.classList.remove('hidden'); saveLoader.classList.add('hidden'); }
+      }
+    }
+
+    function handleCariNota() {
+      const nomor = cariNotaInput.value.trim();
+      if (!nomor) {
+        cariNotaMessage.textContent = 'Silakan masukkan Nomor Nota.';
+        cariNotaMessage.className = 'text-sm text-red-600';
+        return;
+      }
+      if (!webAppUrl || webAppUrl.startsWith('MASUKKAN_URL')) {
+        alert('Harap masukkan URL Web App Google Apps Script Anda pada variabel webAppUrl.');
+        return;
+      }
+      setLoading(true, 'cari');
+      cariNotaMessage.textContent = 'Mencari nota...';
+      cariNotaMessage.className = 'text-sm text-blue-600';
+      fetch(`${webAppUrl}?action=getNotaByNomor&nomorNota=${encodeURIComponent(nomor)}`)
+        .then(r => r.json())
+        .then(data => {
+          setLoading(false, 'cari');
+          if (data.status === 'success' && data.notaData) {
+            cariNotaMessage.textContent = `Nota ${data.notaData.nomorNota} ditemukan.`;
+            cariNotaMessage.className = 'text-sm text-green-600';
+            // Tampilkan di preview kanan (menggantikan data form)
+            updatePreview(data.notaData.nomorNota, data.notaData.tanggal, data.notaData);
+            // Tampilkan tombol "Buat Nota Baru" untuk mengembalikan form ke mode edit
+            resetCariBtn.classList.remove('hidden');
+          } else {
+            throw new Error(data.message || 'Nota tidak ditemukan');
+          }
+        })
+        .catch(err => {
+          setLoading(false, 'cari');
+          cariNotaMessage.textContent = `Error: ${err.message}`;
+          cariNotaMessage.className = 'text-sm text-red-600';
+          console.error(err);
+        });
+    }
+
+    function resetCariForm() {
+      // re-enable form untuk buat nota baru
+      setFormReadOnly(false);
+      resetCariBtn.classList.add('hidden');
+      cariNotaInput.value = '';
+      cariNotaMessage.textContent = '';
+      cart = [];
+      totalKeseluruhan = 0;
+      renderCart();
+      updatePreview();
+    }
+
+    /* ------------------ RESET FORM ------------------ */
+    function handleReset() {
+      if (!confirm('Reset formulir dan kosongkan keranjang?')) return;
+      cart = [];
+      totalKeseluruhan = 0;
+      $('nota-form').reset();
+      setFormReadOnly(false);
+      renderCart();
+      updatePreview();
+      formMessage.textContent = 'Formulir telah direset.';
+      formMessage.className = 'text-sm text-gray-600';
+    }
+
+    /* ------------------ FORM READONLY (LOCK) ------------------ */
+    function setFormReadOnly(readonly) {
+      formLockedForNota = !!readonly;
+      // fields to lock: kasir, pemohon, pekerjaan, item search/controls, jumlah-bayar, bank, metode radios
+      $('kasir').disabled = readonly;
+      $('pemohon').disabled = readonly;
+      $('pekerjaan').disabled = readonly;
+      itemSearchEl.disabled = readonly;
+      itemQtyEl.disabled = readonly;
+      tambahItemBtn.disabled = readonly;
+      $('item-selected-display').disabled = readonly;
+      jumlahBayarEl.disabled = readonly;
+      namaBankEl.disabled = readonly;
+      // metode radios - disable individually
+      document.querySelectorAll('input[name="metode"]').forEach(r => r.disabled = readonly);
+      // disable save button per permintaan
+      saveBtn.disabled = readonly;
+      // optional: visually indicate disabled inputs via class (kept simple using disabled attr)
+      // When unlocking, ensure bank visibility is correct based on selected metode
+      if (!readonly) {
+        // restore bank input visibility based on checked metode
+        const metode = document.querySelector('input[name="metode"]:checked')?.value || 'Cash';
+        if (metode === 'Transfer') bankInputEl.classList.remove('hidden'); else bankInputEl.classList.add('hidden');
+      } else {
+        // ensure bank input visible if transfer selected
+        const metode = document.querySelector('input[name="metode"]:checked')?.value || 'Cash';
+        if (metode === 'Transfer') bankInputEl.classList.remove('hidden'); else bankInputEl.classList.add('hidden');
+      }
+    }
+
+    /* ------------------ UTIL ------------------ */
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+  </script>
+</body>
+</html>
