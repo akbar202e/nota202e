@@ -87,7 +87,7 @@
         <form id="nota-form" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label class="text-sm font-medium">Nama Kasir</label>
+              <label class="text-sm font-medium">Nama Petugas</label>
               <input id="kasir" value="Tinawati" class="w-full border rounded p-2" required />
             </div>
             <div>
@@ -191,7 +191,7 @@
           <table>
             <tr><td>No. Nota</td><td>: <span id="nota-no-preview">AUTO</span></td></tr>
             <tr><td>Tanggal</td><td>: <span id="nota-tanggal-preview"></span></td></tr>
-            <tr><td>Kasir</td><td>: <span id="nota-kasir-preview"></span></td></tr>
+            <tr><td>Petugas</td><td>: <span id="nota-kasir-preview"></span></td></tr>
           </table>
 
           <div class="divider"></div>
@@ -607,7 +607,7 @@
           <table style="width:100%;font-size:12pt;">
             <tr><td>No. Nota</td><td>: ${escapeHtml(notaNoPreview.textContent)}</td></tr>
             <tr><td>Tanggal</td><td>: ${escapeHtml(notaTanggalPreview.textContent)}</td></tr>
-            <tr><td>Kasir</td><td>: ${escapeHtml(notaKasirPreview.textContent)}</td></tr>
+            <tr><td>Petugas</td><td>: ${escapeHtml(notaKasirPreview.textContent)}</td></tr>
           </table>
           <div style="border-top:1px dashed #000;margin:6px 0;"></div>
           <table style="width:100%;font-size:11pt;">
@@ -751,6 +751,7 @@
   </script>
 </body>
 </html>
+
 
 
 
