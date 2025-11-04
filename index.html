@@ -615,7 +615,7 @@
             <tr><td style="vertical-align: top; text-align: left;">Pekerjaan</td><td>: ${escapeHtml(notaPekerjaanPreview.textContent)}</td></tr>
           </table>
           <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:11pt;">`;
+          <table style="width:100%;font-size:12pt;">`;
       let itemsHtml = '';
       cart.forEach(it => {
         itemsHtml += `<tr><td>${escapeHtml(it.name)} (${it.qty} x ${rupiah(it.price)})</td><td align="right">${rupiah(it.total)}</td></tr>`;
@@ -623,7 +623,7 @@
       const footer = `
           </table>
           <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:10pt;">
+          <table style="width:100%;font-size:12pt;">
             <tr style="font-weight:700;border-top:1px solid #000"><th align="left">TOTAL</th><td align="right">${rupiah(totalKeseluruhan)}</td></tr>
             <tr><th align="left">Bayar (${escapeHtml(notaMetodePreview.textContent)})</th><td align="right">${escapeHtml(notaBayarPreview.textContent)}</td></tr>
           </table>
@@ -751,6 +751,7 @@
   </script>
 </body>
 </html>
+
 
 
 
