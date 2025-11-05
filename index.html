@@ -3,44 +3,170 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Form Nota Pembayaran — UPT Lab</title>
+  <title>Form Nota Pembayaran A4 — UPT Lab</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- html2pdf -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-  <style>
-    /* PRINT untuk thermal 48mm */
+<style>
+   /* CSS UNTUK PRINT A4 */
+    @media screen {
+      #nota-print-area {
+        display: none !important;
+      }
+    }
+
+    /* Saat print, hanya area nota yang ditampilkan */
     @media print {
-      body * { visibility: hidden; }
-      #nota-print-area, #nota-print-area * { visibility: visible; }
-      #nota-print-area { position: absolute; left:0; top:0; }
-      @page { size: 48mm auto; margin: 0; }
+      body * {
+        visibility: hidden;
+      }
+      #nota-print-area, #nota-print-area * {
+        visibility: visible;
+      }
+      #nota-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 1.5cm;
+      }
+      .nota-a5-container {
+        width: 48%;
+        height: 100%;
+        font-family: 'Times New Roman', Times, serif;
+        color: #000;
+        font-size: 10pt;
+        line-height: 1.3;
+        box-sizing: border-box;
+      }
+      .nota-a5-container .nota-header h1 { font-size: 14pt; }
+      .nota-a5-container .nota-header p { font-size: 10pt; }
+      .nota-a5-container .nota-title { font-size: 12pt; margin: 15px 0; }
+      .nota-a5-container .nota-details { font-size: 10pt; }
+      .nota-a5-container .item-table { font-size: 10pt; }
+      .nota-a5-container .item-table th,
+      .nota-a5-container .item-table td { padding: 4px 6px; }
+      .nota-a5-container .total-section { font-size: 10pt; }
+      .nota-a5-container .total-section table { width: 100%; }
+      .nota-a5-container .total-section table table { width: 100%; }
+      .nota-a5-container .total-section .signature { height: 50px; margin-top: 5px; margin-bottom: 5px; }
+      .nota-a5-container .total-section .signature img { height: 50px; }
+      .nota-a5-container .total-section .total-row th,
+      .nota-a5-container .total-section .total-row td { font-size: 11pt; }
+      .no-print { display: none !important; }
+
+       body::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        border-left: 1px dashed #b6b6b6;
+        z-index: 9999;
     }
 
-    /* Preview nota di layar (diperbesar agar mudah dibaca) */
-    #nota-preview {
-      width: 48mm;
-      background: #fff;
-      padding: 8px;
-      border: 1px solid #e5e7eb;
-      font-family: "Courier New", Courier, monospace;
-      font-size: 7pt;
-      line-height: 1.35;
-      color: #000;
-      transform: scale(1.5);
-      transform-origin: top left;
-    }
-    #nota-preview h1 { font-size: 8pt; margin:0; text-align:center; font-weight:700; }
-    #nota-preview p { margin:0; text-align:center; font-size:7pt; }
-    #nota-preview .divider { border-top: 1px dashed #000; margin:6px 0; }
-    #nota-preview table { width:100%; font-size:7pt; border-collapse: collapse; }
-    #nota-preview td, #nota-preview th { padding: 1px 0; vertical-align: top; }
-    #nota-preview .total-row th, #nota-preview .total-row td { font-weight:700; border-top:1px solid #000; }
 
-    /* Hidden print area wrapper (used for measuring & printing) */
-    #nota-print-area { display: none; }
+    /* DIHAPUS: Aturan umum #nota-print-area { display: none; } dipindahkan ke @media screen */
+
+    /* --- CSS STYLE UNTUK KONTEN NOTA A4 --- */
+    .nota-header {
+      border-bottom: 2px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .nota-title {
+      text-align: center;
+      font-size: 14pt;
+      font-weight: bold;
+      text-decoration: underline;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .nota-details {
+      margin-bottom: 20px;
+      font-size: 11pt;
+    }
+    .nota-details table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .nota-details td {
+      padding: 2px 0;
+      vertical-align: top;
+    }
+    .nota-details td:first-child {
+      width: 150px; /* Lebar label */
+    }
+
+    .item-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 11pt;
+    }
+    .item-table th, .item-table td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+    }
+    .item-table th {
+      background-color: #f0f0f0;
+      text-align: center;
+    }
+    .item-table td:nth-child(1),
+    .item-table td:nth-child(2) {
+      text-align: center;
+    }
+    .item-table td:nth-child(4),
+    .item-table td:nth-child(5) {
+      text-align: right;
+    }
+    
+    .total-section {
+      font-size: 11pt;
+    }
+    .total-section .terbilang {
+      font-style: italic;
+      font-weight: bold;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      margin-bottom: 20px;
+    }
+    /* BARU: Style ini sekarang untuk tabel total di dalam td kanan */
+    .total-section table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .total-section table table th {
+      text-align: left;
+      padding: 4px 8px;
+      border-bottom: 1px solid #000;
+    }
+    .total-section table table td {
+      text-align: right;
+      padding: 4px 8px;
+      border-bottom: 1px solid #000;
+    }
+    .total-section .total-row th,
+    .total-section .total-row td {
+      font-weight: bold;
+      font-size: 12pt;
+      border-top: 2px solid #000;
+      border-bottom: 2px double #000;
+    }
 
     /* Small spinner */
     .spinner { border-top-color: #2563eb; animation: spin 1s linear infinite; }
@@ -51,8 +177,7 @@
 
   <div class="max-w-7xl mx-auto">
 
-    <!-- PENCARIAN NOTA -->
-    <div class="bg-white p-4 rounded shadow mb-6">
+    <div class="bg-white p-4 rounded shadow mb-6 no-print">
       <div class="flex flex-col md:flex-row md:items-center md:space-x-4">
         <div class="flex-grow">
           <h2 class="text-lg font-semibold">Cari Nota Lama</h2>
@@ -66,18 +191,12 @@
           </div>
           <div id="cari-nota-message" class="mt-2 text-sm"></div>
         </div>
-
-        <div class="mt-3 md:mt-0">
-          <!-- Kontrol reprint telah dihapus sesuai permintaan -->
-        </div>
       </div>
     </div>
 
-    <!-- MAIN GRID: Form kiri | Preview kanan -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-6">
 
-      <!-- FORM (KIRI) -->
-      <div class="bg-white p-6 rounded shadow">
+      <div class="bg-white p-6 rounded shadow no-print">
         <h1 class="text-2xl font-bold mb-4">Formulir Nota Pembayaran</h1>
 
         <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded mb-4 text-sm text-blue-700">
@@ -103,7 +222,6 @@
 
           <hr />
 
-          <!-- Cari Item via Sheet -->
           <div>
             <label class="text-sm font-medium">Cari Item</label>
             <input id="item-search" placeholder="Ketik nama barang..." class="w-full border rounded p-2" autocomplete="off" />
@@ -161,14 +279,15 @@
 
           <div id="form-message" class="text-sm mt-2"></div>
 
-          <!-- Tombol terpisah -->
           <div class="flex flex-wrap gap-2 mt-4">
             <button type="button" id="save-btn" class="bg-green-600 text-white px-4 py-2 rounded flex items-center">
               <span id="save-text">Simpan</span>
               <div id="save-loader" class="spinner w-4 h-4 border-2 border-t-white rounded-full ml-2 hidden"></div>
             </button>
-
-            <button type="button" id="print-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Cetak</button>
+            
+            <button type="button" id="print-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Cetak A4</button>
+            
+            <button type="button" id="download-word-btn" class="bg-purple-600 text-white px-4 py-2 rounded">Download Word (.doc)</button>
 
             <button type="button" id="reset-btn" class="bg-gray-500 text-white px-4 py-2 rounded">Reset</button>
 
@@ -176,61 +295,16 @@
 
         </form>
       </div>
-
-      <!-- PREVIEW (KANAN) -->
-      <div>
-        <h2 class="text-lg font-bold mb-2">Preview Nota</h2>
-
-        <div id="nota-preview" aria-hidden="false">
-          <h1>UPT LAB. BAHAN KONSTRUKSI</h1>
-          <p>Jalan Tjilik Riwut km. 3 Palangka Raya</p>
-          <p>(0536) 3222607</p>
-
-          <div class="divider"></div>
-
-          <table>
-            <tr><td>No. Nota</td><td>: <span id="nota-no-preview">AUTO</span></td></tr>
-            <tr><td>Tanggal</td><td>: <span id="nota-tanggal-preview"></span></td></tr>
-            <tr><td>Petugas</td><td>: <span id="nota-kasir-preview"></span></td></tr>
-          </table>
-
-          <div class="divider"></div>
-
-          <table>
-            <tr><td>Pemohon</td><td>: <span id="nota-pemohon-preview"></span></td></tr>
-            <tr><td>Pekerjaan</td><td>: <span id="nota-pekerjaan-preview"></span></td></tr>
-          </table>
-
-          <div class="divider"></div>
-
-          <table id="nota-items-preview">
-            <tbody></tbody>
-          </table>
-
-          <div class="divider"></div>
-
-          <table>
-            <tr class="total-row"><th align="left">TOTAL</th><td align="right"><span id="nota-total-preview">Rp 0</span></td></tr>
-            <tr><th align="left">Bayar (<span id="nota-metode-preview"></span>)</th><td align="right"><span id="nota-bayar-preview">Rp 0</span></td></tr>
-          </table>
-
-          <div class="divider"></div>
-          <p style="margin-top:6px;text-align:center;">-- Terima Kasih --</p>
-        </div>
-      </div>
     </div>
 
-    <!-- Area tersembunyi untuk print (menggunakan isi dari preview) -->
     <div id="nota-print-area" aria-hidden="true">
-      <div id="nota-wrapper"></div>
-    </div>
+      </div>
 
   </div>
 
   <script>
     /*************************************************************************
      * PENTING: GANTI nilai webAppUrl di bawah ini dengan URL Web App GAS kamu
-     * (hasil deploy "Execute as: me" & "Who has access: Anyone").
      *************************************************************************/
     const webAppUrl = 'https://script.google.com/macros/s/AKfycbx2iC-Vv-T-dDtUMxMWugqEZM5bpGtCNLV2I8xYINiJTs0zqZj3BX4m1sruvhAB1_l7Fg/exec';
 
@@ -240,12 +314,16 @@
     const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
     // State
-    let itemMasterList = []; // dari sheet DaftarBarang -> format: [[name, price], ...]
+    let itemMasterList = [];
     let cart = [];
     let totalKeseluruhan = 0;
-    let formLockedForNota = false; // flag ketika nota lama dimuat
+    let formLockedForNota = false;
+    let currentNotaData = { // Menyimpan data nota untuk preview A4
+      nomorNota: 'AUTO',
+      tanggal: new Date().toISOString(),
+    }; 
 
-    // Elemen
+    // Elemen Form
     const itemSearchEl = $('item-search');
     const searchResultsEl = $('search-results');
     const itemSelectedDisplayEl = $('item-selected-display');
@@ -266,6 +344,7 @@
     const saveLoader = $('save-loader');
     const saveText = $('save-text');
     const printBtn = $('print-btn');
+    const downloadWordBtn = $('download-word-btn');
     const resetBtn = $('reset-btn');
 
     // Cari Nota
@@ -276,20 +355,8 @@
     const cariNotaMessage = $('cari-nota-message');
     const resetCariBtn = $('reset-cari-btn');
 
-    // Preview elements
-    const notaNoPreview = $('nota-no-preview');
-    const notaTanggalPreview = $('nota-tanggal-preview');
-    const notaKasirPreview = $('nota-kasir-preview');
-    const notaPemohonPreview = $('nota-pemohon-preview');
-    const notaPekerjaanPreview = $('nota-pekerjaan-preview');
-    const notaItemsPreview = $('nota-items-preview').getElementsByTagName('tbody')[0];
-    const notaTotalPreview = $('nota-total-preview');
-    const notaMetodePreview = $('nota-metode-preview');
-    const notaBayarPreview = $('nota-bayar-preview');
-
-    // Print wrapper
+    // Print element
     const notaPrintArea = $('nota-print-area');
-    const notaWrapper = $('nota-wrapper');
 
     // Form message
     const formMessage = $('form-message');
@@ -297,14 +364,13 @@
     // Inisialisasi: ambil daftar barang
     document.addEventListener('DOMContentLoaded', () => {
       if (!webAppUrl || webAppUrl.startsWith('MASUKKAN_URL')) {
-        // Jangan alert otomatis, tunggu user
-        console.warn('webAppUrl belum diisi. Silakan isi variabel webAppUrl di script HTML.' );
+        console.warn('webAppUrl belum diisi.');
       } else {
         fetchItemsFromSheet();
       }
       addEventListeners();
       renderCart(); // inisialisasi
-      updatePreview();
+      updateA4Preview(); // Siapkan area print
     });
 
     /* ------------------ FETCH ITEMS ------------------ */
@@ -313,14 +379,10 @@
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            itemMasterList = data; // ex: [["Semen", 50000], ["Pasir", 75000]]
+            itemMasterList = data;
             console.log('Daftar barang dimuat:', itemMasterList);
           } else {
-            if (data && data.status && data.status === 'error') {
-              console.error('Error saat fetch items:', data.message);
-            } else {
-              console.warn('Format data items tidak dikenal:', data);
-            }
+            console.error('Error saat fetch items:', data.message || 'Format data tidak dikenal');
           }
         }).catch(err => {
           console.error('Gagal ambil daftar barang:', err);
@@ -343,22 +405,24 @@
       // Form buttons
       saveBtn.addEventListener('click', handleSave);
       printBtn.addEventListener('click', handlePrint);
+      downloadWordBtn.addEventListener('click', handleDownloadWord);
       resetBtn.addEventListener('click', handleReset);
 
       // Cari Nota
       cariNotaBtn.addEventListener('click', handleCariNota);
       resetCariBtn.addEventListener('click', resetCariForm);
 
-      // Update preview when typing in key fields
-      ['kasir','pemohon','pekerjaan','jumlah-bayar','nama-bank'].forEach(id => {
+      // Update area print saat mengetik di form
+      ['kasir', 'pemohon', 'pekerjaan', 'jumlah-bayar', 'nama-bank'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', updatePreview);
+        if (el) el.addEventListener('input', updateA4Preview);
       });
+      metodeEls.forEach(radio => radio.addEventListener('change', updateA4Preview));
     }
 
     /* ------------------ ITEM SEARCH & SELECT ------------------ */
     function handleItemSearch(e) {
-      if (formLockedForNota) return; // blokir search jika form dikunci
+      if (formLockedForNota) return;
       const qtext = e.target.value.trim().toLowerCase();
       if (qtext.length < 1) { searchResultsEl.innerHTML = ''; searchResultsEl.classList.add('hidden'); return; }
       const filtered = itemMasterList.filter(it => it[0].toString().toLowerCase().includes(qtext));
@@ -412,7 +476,7 @@
       itemPriceEl.value = '';
       itemQtyEl.value = 1;
       renderCart();
-      updatePreview();
+      updateA4Preview();
     }
 
     function renderCart() {
@@ -444,12 +508,13 @@
             const idx = parseInt(e.currentTarget.dataset.idx, 10);
             cart.splice(idx, 1);
             renderCart();
-            updatePreview();
+            updateA4Preview();
           });
         });
       }
       totalHargaEl.textContent = rupiah(totalKeseluruhan);
       jumlahBayarEl.value = totalKeseluruhan || '';
+      updateA4Preview(); // Pastikan area print juga terupdate
     }
 
     /* ------------------ PAYMENT METHOD ------------------ */
@@ -463,73 +528,179 @@
         namaBankEl.required = false;
         namaBankEl.value = '';
       }
-      updatePreview();
+      updateA4Preview();
     }
 
-    /* ------------------ POPULATE PREVIEW ------------------ */
-    function updatePreview(nomorNota = null, tanggalNota = null, dataFromSheet = null) {
-      const now = tanggalNota ? new Date(tanggalNota).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-      notaTanggalPreview.textContent = now;
+    /* ------------------ POPULATE A4 PREVIEW (AREA PRINT) ------------------ */
+    function updateA4Preview(dataFromSheet = null) {
+      let data;
 
       if (dataFromSheet) {
-        notaNoPreview.textContent = dataFromSheet.nomorNota || (nomorNota || 'AUTO');
-        notaKasirPreview.textContent = dataFromSheet.kasir || '';
-        notaPemohonPreview.textContent = dataFromSheet.pemohon || '';
-        notaPekerjaanPreview.textContent = dataFromSheet.pekerjaan || '';
-        notaItemsPreview.innerHTML = '';
-        (dataFromSheet.cart || []).forEach(item => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escapeHtml(item.name)} (${item.qty} x ${rupiah(item.price)})</td><td align="right">${rupiah(item.total)}</td>`;
-          notaItemsPreview.appendChild(tr);
-        });
-        notaTotalPreview.textContent = rupiah(dataFromSheet.totalKeseluruhan || 0);
-        notaMetodePreview.textContent = (dataFromSheet.metodePembayaran || '') + (dataFromSheet.bank ? ` (${dataFromSheet.bank})` : '');
-        notaBayarPreview.textContent = rupiah(dataFromSheet.jumlahBayar || 0);
-
-        // isi local cart & form fields agar pengguna bisa melihat data di form
-        cart = (dataFromSheet.cart || []).map(i => ({...i}));
-        totalKeseluruhan = dataFromSheet.totalKeseluruhan || 0;
-        totalHargaEl.textContent = rupiah(totalKeseluruhan);
-        jumlahBayarEl.value = dataFromSheet.jumlahBayar || '';
-
-        // isi form fields (dan lock)
-        $('kasir').value = dataFromSheet.kasir || '';
-        $('pemohon').value = dataFromSheet.pemohon || '';
-        $('pekerjaan').value = dataFromSheet.pekerjaan || '';
-        // metode radio
-        const metodeVal = (dataFromSheet.metodePembayaran || 'Cash');
-        document.querySelectorAll('input[name="metode"]').forEach(r => {
-          r.checked = (r.value === metodeVal);
-        });
-        if (metodeVal === 'Transfer') {
-          bankInputEl.classList.remove('hidden');
-          namaBankEl.value = dataFromSheet.bank || '';
-        } else {
-          bankInputEl.classList.add('hidden');
-          namaBankEl.value = '';
-        }
-
-        renderCart();
-        // lock form so fields cannot diubah
-        setFormReadOnly(true);
+        // Mode 'Cari Nota'
+        data = {
+          nomorNota: dataFromSheet.nomorNota,
+          tanggal: new Date(dataFromSheet.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+          kasir: dataFromSheet.kasir,
+          pemohon: dataFromSheet.pemohon,
+          pekerjaan: dataFromSheet.pekerjaan,
+          cart: dataFromSheet.cart || [],
+          totalKeseluruhan: dataFromSheet.totalKeseluruhan || 0,
+          metodePembayaran: dataFromSheet.metodePembayaran || 'Cash',
+          bank: dataFromSheet.bank || '',
+          jumlahBayar: dataFromSheet.jumlahBayar || 0
+        };
+        currentNotaData.nomorNota = data.nomorNota;
+        currentNotaData.tanggal = dataFromSheet.tanggal;
       } else {
-        // Use current form state
-        notaNoPreview.textContent = nomorNota || 'AUTO';
-        notaKasirPreview.textContent = $('kasir').value || '';
-        notaPemohonPreview.textContent = $('pemohon').value || '';
-        notaPekerjaanPreview.textContent = $('pekerjaan').value || '';
-        notaItemsPreview.innerHTML = '';
-        cart.forEach(it => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escapeHtml(it.name)} (${it.qty} x ${rupiah(it.price)})</td><td align="right">${rupiah(it.total)}</td>`;
-          notaItemsPreview.appendChild(tr);
-        });
-        notaTotalPreview.textContent = rupiah(totalKeseluruhan || 0);
-        const metode = document.querySelector('input[name="metode"]:checked')?.value || '';
-        notaMetodePreview.textContent = metode + (metode === 'Transfer' && namaBankEl.value ? ` (${namaBankEl.value})` : '');
-        notaBayarPreview.textContent = rupiah(parseFloat(jumlahBayarEl.value || 0));
+        // Mode 'Nota Baru'
+        const metode = document.querySelector('input[name="metode"]:checked')?.value || 'Cash';
+        data = {
+          nomorNota: currentNotaData.nomorNota,
+          tanggal: new Date(currentNotaData.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+          kasir: $('kasir').value,
+          pemohon: $('pemohon').value,
+          pekerjaan: $('pekerjaan').value,
+          cart: cart,
+          totalKeseluruhan: totalKeseluruhan,
+          metodePembayaran: metode,
+          bank: namaBankEl.value,
+          jumlahBayar: parseFloat(jumlahBayarEl.value || 0)
+        };
       }
+      
+      const terbilangStr = `Terbilang: ${terbilang(data.totalKeseluruhan)} rupiah`;
+
+      // Build item rows
+      let itemRows = '';
+      data.cart.forEach((item, index) => {
+        itemRows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${item.qty}</td>
+            <td>${rupiah(item.price)}</td>
+            <td>${rupiah(item.total)}</td>
+          </tr>
+        `;
+      });
+      if (data.cart.length === 0) {
+        itemRows = '<tr><td colspan="5" style="text-align:center;"><i>Belum ada item...</i></td></tr>';
+      }
+
+      // Build payment info
+      const metodeStr = data.metodePembayaran + (data.metodePembayaran === 'Transfer' && data.bank ? ` (${data.bank})` : '');
+
+      // Build HTML untuk *satu* nota
+      const notaHtml = `
+        <div class="nota-header">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+              <tr>
+                <td style="width: 110px; vertical-align: top; padding: 0;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/4e/Coat_of_arms_of_Central_Kalimantan.svg" alt="Logo Perusahaan" style="max-width: 180px; max-height: 100px; filter: grayscale(100%);">
+                </td>
+                <td style="text-align: center; vertical-align: top; padding: 0;">
+                  <h1 style="font-size: 16pt; font-weight: bold; margin: 0;">UPT LAB. BAHAN KONSTRUKSI</h1>
+                  <p style="font-size: 11pt; margin: 2px 0;">Dinas Pekerjaan Umum dan Penataan Ruang</p>
+                  <p style="font-size: 11pt; margin: 2px 0;">Provinsi Kalimantan Tengah</p>
+                  <p style="font-size: 11pt; margin: 2px 0;">Jalan Tjilik Riwut km. 3 Palangka Raya | Telp. (0536) 3222607</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 class="nota-title">NOTA PEMBAYARAN</h2>
+        
+        <div class="nota-details">
+          <table>
+            <tr>
+              <td>No. Nota</td>
+              <td>: <strong id="nota-no-a4">${escapeHtml(data.nomorNota)}</strong></td>
+            </tr>
+            <tr>
+              <td>Tanggal</td>
+              <td>: ${escapeHtml(data.tanggal)}</td>
+            </tr>
+            <tr>
+              <td>Diterima dari</td>
+              <td>: ${escapeHtml(data.pemohon)}</td>
+            </tr>
+            <tr>
+              <td>Pekerjaan</td>
+              <td>: ${escapeHtml(data.pekerjaan)}</td>
+            </tr>
+          </table>
+        </div>
+
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">No.</th>
+              <th style="width: 45%;">Uraian / Nama Item</th>
+              <th style="width: 10%;">Qty</th>
+              <th style="width: 20%;">Harga Satuan</th>
+              <th style="width: 20%;">Jumlah</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+        </table>
+
+        <div class="total-section">
+          <div class="terbilang">
+            ${terbilangStr}
+          </div>
+          
+          <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+            <tbody>
+              <tr>
+                <td style="width: 50%; vertical-align: top; text-align: center; font-size: 11pt; padding-right: 80px;">
+                  <div>Hormat kami,</div>
+                  <div class="signature" style="height: 80px; margin-top: 10px; margin-bottom: 10px;">
+                    <img src="" style="height: 80px; margin: 0 auto;" />
+                  </div>
+                  <div class="nama-petugas" style="font-weight: bold; text-decoration: underline;">${escapeHtml(data.kasir)}</div>
+                  <div>Petugas Lab</div>
+                </td>
+                
+                <td style="width: 50%; vertical-align: top;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #000;">Metode Bayar</th>
+                      <td style="text-align: right; padding: 4px 8px; border-bottom: 1px solid #000;">${escapeHtml(metodeStr)}</td>
+                    </tr>
+                    <tr>
+                      <th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #000;">Jumlah Bayar</th>
+                      <td style="text-align: right; padding: 4px 8px; border-bottom: 1px solid #000;">${rupiah(data.jumlahBayar)}</td>
+                    </tr>
+                    <tr class="total-row" style="font-weight: bold; font-size: 12pt;">
+                      <th style="text-align: left; padding: 4px 8px; border-top: 2px solid #000; border-bottom: 2px double #000;">TOTAL</th>
+                      <td style="text-align: right; padding: 4px 8px; border-top: 2px solid #000; border-bottom: 2px double #000;">${rupiah(data.totalKeseluruhan)}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="clear:both;"></div>
+        </div>
+        `;
+
+      // Inject HTML 2x ke area print
+      const finalPrintHtml = `
+        <div class="nota-a5-container">
+          ${notaHtml}
+        </div>
+        <div class="nota-a5-container">
+          ${notaHtml}
+        </div>
+      `;
+      
+      notaPrintArea.innerHTML = finalPrintHtml;
     }
+
 
     /* ------------------ SAVE TO SHEET (POST) ------------------ */
     async function handleSave() {
@@ -544,8 +715,6 @@
 
       setLoading(true, 'save');
       formMessage.textContent = 'Menyimpan data ke Google Sheet...';
-
-      // 🔹 Buat string gabungan item seperti "uji dmf (2), uji aspal (1)"
       const itemSummary = cart.map(it => `${it.name} (${it.qty})`).join(', ');
 
       const formData = {
@@ -571,8 +740,9 @@
         if (data.status === 'success') {
           formMessage.textContent = `Sukses! Nota ${data.nomorNota} berhasil disimpan.`;
           formMessage.className = 'text-sm text-green-600';
-          updatePreview(data.nomorNota);
-          notaNoPreview.textContent = data.nomorNota;
+          currentNotaData.nomorNota = data.nomorNota;
+          currentNotaData.tanggal = new Date().toISOString();
+          updateA4Preview(); // Update area print dengan nomor nota baru
         } else {
           throw new Error(data.message || 'Gagal menyimpan nota');
         }
@@ -585,52 +755,100 @@
     }
 
 
-    /* ------------------ PRINT & PDF ------------------ */
+    /* ------------------ PRINT & DOWNLOAD ------------------ */
     function handlePrint() {
-      // Prepare nota-wrapper with contents of preview (clean scale)
-      notaWrapper.innerHTML = populateNotaWrapperHtml();
-      notaPrintArea.style.display = 'block';
-      // Use small timeout to allow DOM update
+      updateA4Preview(); 
       setTimeout(() => {
         window.print();
-        notaPrintArea.style.display = 'none';
       }, 200);
     }
 
-    function populateNotaWrapperHtml() {
-      const header = `
-        <div style="width:100%;font-family: Arial, Helvetica, sans-serif;font-size:7pt;line-height:1.35;color:#000">
-          <h1 style="font-weight: bold;font-size:16pt;text-align:center;margin:0">UPT LAB. BAHAN KONSTRUKSI</h1>
-          <p style="font-size:11pt;text-align:center;margin:0">Jalan Tjilik Riwut km. 3 Palangka Raya</p>
-          <p style="font-size:11pt;text-align:center;margin:0">(0536) 3222607</p>
-          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:12pt;">
-            <tr><td>No. Nota</td><td>: ${escapeHtml(notaNoPreview.textContent)}</td></tr>
-            <tr><td>Tanggal</td><td>: ${escapeHtml(notaTanggalPreview.textContent)}</td></tr>
-            <tr><td>Petugas</td><td>: ${escapeHtml(notaKasirPreview.textContent)}</td></tr>
-          </table>
-          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:11pt;">
-            <tr><td style="vertical-align: top; text-align: left;">Pemohon</td><td>: ${escapeHtml(notaPemohonPreview.textContent)}</td></tr>
-            <tr><td style="vertical-align: top; text-align: left;">Pekerjaan</td><td>: ${escapeHtml(notaPekerjaanPreview.textContent)}</td></tr>
-          </table>
-          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:12pt;">`;
-      let itemsHtml = '';
-      cart.forEach(it => {
-        itemsHtml += `<tr><td>${escapeHtml(it.name)} (${it.qty} x ${rupiah(it.price)})</td><td align="right">${rupiah(it.total)}</td></tr>`;
+    function handleDownloadWord() {
+      updateA4Preview();
+      const nomor = currentNotaData.nomorNota || 'NOTA';
+      const pemohon = $('pemohon').value || 'Customer';
+      const content = notaPrintArea.innerHTML;
+
+      // Gabungkan menjadi format HTML yang bisa dibaca Word
+      const htmlString = `
+        <html xmlns:v="urn:schemas-microsoft-com:vml"
+        xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:w="urn:schemas-microsoft-com:office:word"
+        xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+        xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8">
+          <title>Nota Pembayaran</title>
+          <style>
+            body { font-family: 'Times New Roman', Times, serif; }
+            @page { 
+              size: A4 landscape; 
+              mso-page-orientation: landscape; 
+              margin: 1.5cm; 
+            }
+            
+            /* Salin SEMUA style nota ke sini */
+            .nota-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+            .nota-title { text-align: center; font-size: 14pt; font-weight: bold; text-decoration: underline; margin-top: 20px; margin-bottom: 20px; }
+            .nota-details { margin-bottom: 20px; font-size: 11pt; }
+            .nota-details table { width: 100%; border-collapse: collapse; }
+            .nota-details td { padding: 2px 0; vertical-align: top; }
+            .nota-details td:first-child { width: 150px; }
+            .item-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11pt; }
+            .item-table th, .item-table td { border: 1px solid #000; padding: 6px 8px; }
+            .item-table th { background-color: #f0f0f0; text-align: center; }
+            .item-table td:nth-child(1), .item-table td:nth-child(2) { text-align: center; }
+            .item-table td:nth-child(4), .item-table td:nth-child(5) { text-align: right; }
+            .total-section { font-size: 11pt; }
+            .total-section .terbilang { font-style: italic; font-weight: bold; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; margin-bottom: 20px; }
+            
+            /* BARU: Style untuk TTD + Total Gabungan */
+            .total-section table { width: 100%; border-collapse: collapse; }
+            .total-section .signature { height: 80px; margin-top: 10px; margin-bottom: 10px; }
+            .total-section .signature img { height: 80px; }
+            .total-section .nama-petugas { font-weight: bold; text-decoration: underline; }
+            .total-section table table { width: 100%; } /* Tabel total di dalam */
+            .total-section table table th { text-align: left; padding: 4px 8px; border-bottom: 1px solid #000; }
+            .total-section table table td { text-align: right; padding: 4px 8px; border-bottom: 1px solid #000; }
+            .total-section .total-row th, .total-section .total-row td { font-weight: bold; font-size: 12pt; border-top: 2px solid #000; border-bottom: 2px double #000; }
+
+            /* DIHAPUS: .nota-footer tidak dipakai lagi */
+            
+            /* Style untuk layout A5 ganda */
+            #nota-print-area { display: flex; flex-direction: row; justify-content: space-between; width: 100%; }
+            .nota-a5-container { 
+              width: 48%; height: 100%; 
+              font-size: 10pt; line-height: 1.3; 
+              font-family: 'Times New Roman', Times, serif; 
+            }
+            .nota-a5-container .nota-header h1 { font-size: 14pt; }
+            .nota-a5-container .nota-header p { font-size: 10pt; }
+            .nota-a5-container .nota-title { font-size: 12pt; margin: 15px 0; }
+            .nota-a5-container .nota-details { font-size: 10pt; }
+            .nota-a5-container .item-table { font-size: 10pt; }
+            .nota-a5-container .item-table th, 
+            .nota-a5-container .item-table td { padding: 4px 6px; }
+            .nota-a5-container .total-section { font-size: 10pt; }
+            .nota-a5-container .total-section .signature { height: 50px; }
+            .nota-a5-container .total-section .signature img { height: 50px; }
+            
+            /* Tambahan untuk Word */
+            table { border-collapse: collapse; }
+            div { clear: both; } /* Mencegah float-related issue */
+          </style>
+        </head>
+        <body>
+          <div id="nota-print-area">
+            ${content}
+          </div>
+        </body>
+        </html>`;
+
+      const blob = new Blob([htmlString], {
+        type: 'application/msword'
       });
-      const footer = `
-          </table>
-          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <table style="width:100%;font-size:12pt;">
-            <tr style="font-weight:700;border-top:1px solid #000"><th align="left">TOTAL</th><td align="right">${rupiah(totalKeseluruhan)}</td></tr>
-            <tr><th align="left">Bayar (${escapeHtml(notaMetodePreview.textContent)})</th><td align="right">${escapeHtml(notaBayarPreview.textContent)}</td></tr>
-          </table>
-          <div style="border-top:1px dashed #000;margin:6px 0;"></div>
-          <p style="font-size:11pt;text-align:center;margin-top:6px">-- Terima Kasih --</p>
-        </div>`;
-      return header + itemsHtml + footer;
+      
+      saveAs(blob, `Nota_${nomor}_${pemohon}.doc`);
     }
 
     /* ------------------ SEARCH NOTA LAMA ------------------ */
@@ -660,6 +878,7 @@
       setLoading(true, 'cari');
       cariNotaMessage.textContent = 'Mencari nota...';
       cariNotaMessage.className = 'text-sm text-blue-600';
+      
       fetch(`${webAppUrl}?action=getNotaByNomor&nomorNota=${encodeURIComponent(nomor)}`)
         .then(r => r.json())
         .then(data => {
@@ -667,10 +886,10 @@
           if (data.status === 'success' && data.notaData) {
             cariNotaMessage.textContent = `Nota ${data.notaData.nomorNota} ditemukan.`;
             cariNotaMessage.className = 'text-sm text-green-600';
-            // Tampilkan di preview kanan (menggantikan data form)
-            updatePreview(data.notaData.nomorNota, data.notaData.tanggal, data.notaData);
-            // Tampilkan tombol "Buat Nota Baru" untuk mengembalikan form ke mode edit
+            populateFormFromData(data.notaData);
+            updateA4Preview(data.notaData);
             resetCariBtn.classList.remove('hidden');
+            setFormReadOnly(true);
           } else {
             throw new Error(data.message || 'Nota tidak ditemukan');
           }
@@ -682,36 +901,64 @@
           console.error(err);
         });
     }
+    
+    function populateFormFromData(data) {
+        cart = (data.cart || []).map(i => ({...i}));
+        totalKeseluruhan = data.totalKeseluruhan || 0;
+        totalHargaEl.textContent = rupiah(totalKeseluruhan);
+        jumlahBayarEl.value = data.jumlahBayar || '';
+        $('kasir').value = data.kasir || '';
+        $('pemohon').value = data.pemohon || '';
+        $('pekerjaan').value = data.pekerjaan || '';
+        const metodeVal = (data.metodePembayaran || 'Cash');
+        document.querySelectorAll('input[name="metode"]').forEach(r => {
+          r.checked = (r.value === metodeVal);
+        });
+        if (metodeVal === 'Transfer') {
+          bankInputEl.classList.remove('hidden');
+
+          namaBankEl.value = data.bank || '';
+        } else {
+          bankInputEl.classList.add('hidden');
+          namaBankEl.value = '';
+        }
+        renderCart();
+    }
 
     function resetCariForm() {
-      // re-enable form untuk buat nota baru
       setFormReadOnly(false);
       resetCariBtn.classList.add('hidden');
       cariNotaInput.value = '';
       cariNotaMessage.textContent = '';
-      cart = [];
-      totalKeseluruhan = 0;
-      renderCart();
-      updatePreview();
+      handleReset(false);
     }
 
     /* ------------------ RESET FORM ------------------ */
-    function handleReset() {
-      if (!confirm('Reset formulir dan kosongkan keranjang?')) return;
+    function handleReset(useConfirmation = true) {
+      if (useConfirmation && !confirm('Reset formulir dan kosongkan keranjang?')) return;
+      
       cart = [];
       totalKeseluruhan = 0;
+      currentNotaData = {
+        nomorNota: 'AUTO',
+        tanggal: new Date().toISOString(),
+      };
+      
       $('nota-form').reset();
       setFormReadOnly(false);
-      renderCart();
-      updatePreview();
-      formMessage.textContent = 'Formulir telah direset.';
-      formMessage.className = 'text-sm text-gray-600';
+      renderCart(); // Ini akan memanggil updateA4Preview()
+      
+      if(useConfirmation) {
+        formMessage.textContent = 'Formulir telah direset.';
+        formMessage.className = 'text-sm text-gray-600';
+      } else {
+        formMessage.textContent = '';
+      }
     }
 
     /* ------------------ FORM READONLY (LOCK) ------------------ */
     function setFormReadOnly(readonly) {
       formLockedForNota = !!readonly;
-      // fields to lock: kasir, pemohon, pekerjaan, item search/controls, jumlah-bayar, bank, metode radios
       $('kasir').disabled = readonly;
       $('pemohon').disabled = readonly;
       $('pekerjaan').disabled = readonly;
@@ -721,18 +968,14 @@
       $('item-selected-display').disabled = readonly;
       jumlahBayarEl.disabled = readonly;
       namaBankEl.disabled = readonly;
-      // metode radios - disable individually
       document.querySelectorAll('input[name="metode"]').forEach(r => r.disabled = readonly);
-      // disable save button per permintaan
       saveBtn.disabled = readonly;
-      // optional: visually indicate disabled inputs via class (kept simple using disabled attr)
-      // When unlocking, ensure bank visibility is correct based on selected metode
+      cartItemsEl.querySelectorAll('button[data-idx]').forEach(btn => btn.disabled = readonly);
+
       if (!readonly) {
-        // restore bank input visibility based on checked metode
         const metode = document.querySelector('input[name="metode"]:checked')?.value || 'Cash';
         if (metode === 'Transfer') bankInputEl.classList.remove('hidden'); else bankInputEl.classList.add('hidden');
       } else {
-        // ensure bank input visible if transfer selected
         const metode = document.querySelector('input[name="metode"]:checked')?.value || 'Cash';
         if (metode === 'Transfer') bankInputEl.classList.remove('hidden'); else bankInputEl.classList.add('hidden');
       }
@@ -748,13 +991,33 @@
         .replaceAll('"','&quot;')
         .replaceAll("'",'&#039;');
     }
+    
+    // --- FUNGSI TERBILANG ---
+    function terbilang(angka) {
+        var bilne = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+        if (angka < 12) {
+            return bilne[angka];
+        } else if (angka < 20) {
+            return terbilang(angka - 10) + " belas";
+        } else if (angka < 100) {
+            return terbilang(Math.floor(angka / 10)) + " puluh " + terbilang(angka % 10);
+        } else if (angka < 200) {
+            return "seratus " + terbilang(angka - 100);
+        } else if (angka < 1000) {
+            return terbilang(Math.floor(angka / 100)) + " ratus " + terbilang(angka % 100);
+        } else if (angka < 2000) {
+            return "seribu " + terbilang(angka - 1000);
+        } else if (angka < 1000000) {
+            return terbilang(Math.floor(angka / 1000)) + " ribu " + terbilang(angka % 1000);
+        } else if (angka < 1000000000) {
+            return terbilang(Math.floor(angka / 1000000)) + " juta " + terbilang(angka % 1000000);
+        } else if (angka < 1000000000000) {
+            return terbilang(Math.floor(angka / 1000000000)) + " milyar " + terbilang(angka % 1000000000);
+        } else if (angka < 1000000000000000) {
+            return terbilang(Math.floor(angka / 1000000000000)) + " trilyun " + terbilang(angka % 1000000000000);
+        }
+        return "";
+    }
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
